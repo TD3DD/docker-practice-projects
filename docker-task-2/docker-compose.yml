@@ -1,0 +1,26 @@
+# 'version' більше не потрібен, прибираємо його
+services:
+
+  # 1. Наш мікросервіс
+  service_a:
+    build: ./service_a
+    container_name: service_a_app
+    # !!! ЗВЕРНІТЬ УВАГУ !!!
+    # Ми не вказуємо 'ports'
+    # Цей сервіс НЕ доступний ззовні (з localhost).
+    # До нього може достукатися лише 'gateway' через внутрішню мережу Docker.
+
+  # 2. Наш API Gateway
+  gateway:
+    build: ./gateway
+    container_name: api_gateway
+    ports:
+      # Ми прокидаємо порт 80 контейнера 
+      # на порт 80 нашого комп'ютера.
+      # Це наша єдина "вхідна точка".
+      - "80:80"
+    
+    # Запускаємо gateway лише після того,
+    # як 'service_a' буде запущений.
+    depends_on:
+      - service_a
