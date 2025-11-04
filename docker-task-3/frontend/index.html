@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Full Stack App</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #userList { list-style-type: none; padding-left: 0; }
+        li { background: #f0f0f0; margin: 5px; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Вітаю з Frontend (Nginx)!</h1>
+    <p>Натисніть кнопку, щоб завантажити користувачів з Backend (який візьме їх з DB).</p>
+    
+    <button id="fetchButton">Отримати користувачів</button>
+    
+    <h3>Користувачі:</h3>
+    <ul id="userList">
+        </ul>
+
+    <script>
+        document.getElementById('fetchButton').onclick = function() {
+            const list = document.getElementById('userList');
+            list.innerHTML = '<li>Завантаження...</li>';
+
+            // 1. JS робить запит на /api/users
+            // 2. Nginx (наш Frontend) перехоплює цей запит...
+            fetch('/api/users')
+                .then(response => response.json())
+                .then(users => {
+                    list.innerHTML = ''; // Очищуємо список
+                    if (users.length === 0) {
+                        list.innerHTML = '<li>Дані не знайдено</li>';
+                        return;
+                    }
+                    users.forEach(user => {
+                        const li = document.createElement('li');
+                        li.textContent = `ID: ${user.id}, Ім'я: ${user.name}`;
+                        list.appendChild(li);
+                    });
+                })
+                .catch(err => {
+                    console.error('Не вдалося завантажити дані:', err);
+                    list.innerHTML = `<li>Помилка завантаження. Див. консоль.</li>`;
+                });
+        };
+    </script>
+</body>
+</html>

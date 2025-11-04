@@ -1,0 +1,52 @@
+services:
+  # 1. Сервіс Бази Даних
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db_task3
+    env_file: .env
+    volumes:
+      # (Бонус) Зберігаємо дані БД
+      - postgres_data:/var/lib/postgresql/data
+      
+      # (НОВИНКА) Копіюємо наш init.sql у спеціальну папку всередині
+      # контейнера, звідки він автоматично виконається
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      
+    healthcheck: # (Бонус)
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Сервіс Backend
+  backend:
+    build: ./backend
+    container_name: backend_app_task3
+    env_file: .env
+    environment:
+      - DB_HOST=db # Вказуємо ім'я сервісу БД
+    depends_on:
+      db: # Запускаємо тільки після того, як 'db' стане 'healthy'
+        condition: service_healthy
+    healthcheck: # (Бонус)
+      # Перевіряємо, чи відповідає наш /health ендпоінт
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
+  # 3. Сервіс Frontend
+  frontend:
+    build: ./frontend
+    container_name: frontend_nginx_task3
+    ports:
+      # Прокидаємо порт 80 контейнера на 8080 нашого комп'ютера
+      # (Використовуємо 8080, щоб не конфліктувати з Завданням 2)
+      - "8080:80"
+    depends_on:
+      backend: # Запускаємо тільки після того, як 'backend' стане 'healthy'
+        condition: service_healthy
+
+# (Бонус) Визначаємо іменований volume
+volumes:
+  postgres_data:
