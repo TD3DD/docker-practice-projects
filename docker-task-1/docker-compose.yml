@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # 1. Сервис Базы Данных (PostgreSQL)
+  db:
+    image: postgres:14-alpine  # Используем официальный образ
+    container_name: postgres_db_task1
+    
+    # Загружаем переменные окружения из файла .env
+    env_file:
+      - .env
+      
+    # (Бонус) Подключаем volume для сохранения данных
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      
+    # (Бонус) Проверка состояния: сервис 'web' не запустится,
+    # пока БД не будет готова принимать соединения
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    # Раскомментируйте, если хотите подключиться к БД со своего компьютера
+    # (например, через SQLTools)
+    ports:
+      - "5432:5432"
+
+  # 2. Сервис Веб-приложения (Flask)
+  web:
+    # 'build: ./web' говорит Docker'у собрать образ из Dockerfile в папке ./web
+    build: ./web
+    container_name: flask_web_task1
+    
+    # Передаем переменные из .env (для подключения к БД)
+    env_file:
+      - .env
+      
+    # Добавляем переменную, указывающую на хост базы данных.
+    # 'db' - это имя сервиса БД, которое мы определили выше.
+    environment:
+      - DB_HOST=db
+      
+    # Пробрасываем порт 5000 контейнера на порт 5000 нашего компьютера
+    ports:
+      - "5000:5000"
+      
+    # Запускаем 'web' только после того, как 'db' станет "healthy"
+    depends_on:
+      db:
+        condition: service_healthy
+
+# (Бонус) Определяем именованный volume, который мы использовали выше
+volumes:
+  postgres_data:
